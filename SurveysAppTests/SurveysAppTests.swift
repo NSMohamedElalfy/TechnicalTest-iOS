@@ -11,9 +11,15 @@ import XCTest
 
 class SurveysAppTests: XCTestCase {
     
+    var mainVC:MainViewController!
+    
     override func setUp() {
         super.setUp()
         // Put setup code here. This method is called before the invocation of each test method in the class.
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
+        let nav = storyboard.instantiateInitialViewController() as! UINavigationController
+        mainVC = nav.topViewController as! MainViewController
     }
     
     override func tearDown() {
@@ -21,15 +27,42 @@ class SurveysAppTests: XCTestCase {
         super.tearDown()
     }
     
+    func testLoadingResource(){
+
+        let resource = Resource<[Survey]>(url: API.baseURL , parameters: ["access_token" : API.accessToken], parseJSON: { json in
+            guard let dictionaries = json as? [JSONDictionary] else { return nil }
+            return dictionaries.flatMap(Survey.init)
+        })
+        
+        let expectation = self.expectation(description: "Asynchronous Request")
+        Webservice.shared.load(resource: resource) { result in
+            if let res = result.value {
+                XCTAssertNotNil(res , "No Retriving Data")
+                expectation.fulfill()
+            }
+        }
+        
+        waitForExpectations(timeout: 30.0 , handler:{ error in
+            Webservice.shared.cancelAllLoadingTasks()
+            NSLog("Test timed out")
+        })
+    }
+    
+    
     func testExample() {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
     }
     
     func testPerformanceExample() {
-        // This is an example of a performance test case.
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+        dateFormatter.timeStyle = .short
+        let date = Date()
+        
         self.measure {
-            // Put the code you want to measure the time of here.
+            let string = dateFormatter.string(from: date)
+            NSLog(string)
         }
     }
     
